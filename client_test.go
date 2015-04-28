@@ -51,6 +51,12 @@ func TestContainers(t *testing.T) {
 	}
 	d("Container", container)
 
+	if changes, err := docker.ContainerChanges(id); err != nil {
+		t.Fatalf("Cannot get container changes, %s", err)
+	} else {
+		d("Container Changes", changes)
+	}
+
 	if logs, err := docker.ContainerLogs(id, true, true, false); err != nil {
 		t.Fatalf("Cannot get logs from the container, %s", err)
 	} else {
@@ -84,6 +90,18 @@ func TestContainerCtls(t *testing.T) {
 	if err := docker.StartContainer(id); err != nil {
 		t.Fatalf("Cannot start the container, %s", err)
 	}
+
+	if procs, err := docker.ContainerProcesses(id); err != nil {
+		t.Fatalf("Cannot get top processes from the container, %s", err)
+	} else {
+		d("Processes", procs)
+	}
+	if stats, err := docker.ContainerStats(id); err != nil {
+		t.Fatalf("Cannot get stats from the container, %s", err)
+	} else {
+		d("Container Stats", stats)
+	}
+
 	if err := docker.PauseContainer(id); err != nil {
 		t.Fatalf("Cannot pause the container, %s", err)
 	}

@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// This part contains apis for the containers listed in
-// https://docs.docker.com/reference/api/docker_remote_api_v1.17/#21-containers
+// This part contains apis for the images listed in
+// https://docs.docker.com/reference/api/docker_remote_api_v1.17/#22-images
 
 type Image struct {
 	Created     int64
@@ -104,7 +104,6 @@ func (client *DockerClient) RemoveImage(name string, force, noprune bool) error 
 
 // TODO
 // build: Build image from a Dockerfile
-// images/create: maybe only use the pull part
 // images/(name)/history
 // images/(name)/push
 // images/(name)/tag

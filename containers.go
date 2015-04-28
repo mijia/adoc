@@ -295,8 +295,8 @@ func (client *DockerClient) RemoveContainer(id string, force, volumes bool) erro
 	return err
 }
 
-// We are not providing following mode
 func (client *DockerClient) ContainerLogs(id string, stdout, stderr, timestamps bool, tail ...int) ([]LogEntry, error) {
+	// no following mode
 	v := url.Values{}
 	v.Set("stdout", strconv.FormatBool(stdout))
 	v.Set("stderr", strconv.FormatBool(stderr))
@@ -315,14 +315,51 @@ func (client *DockerClient) ContainerLogs(id string, stdout, stderr, timestamps 
 	return entries, err
 }
 
+type Processes struct {
+	Titles    []string
+	Processes [][]string
+}
+
+func (client *DockerClient) ContainerProcesses(id string, psArgs ...string) (Processes, error) {
+	var procs Processes
+	v := url.Values{}
+	if len(psArgs) > 0 && psArgs[0] != "" {
+		v.Set("ps_args", psArgs[0])
+	}
+	uri := fmt.Sprintf("containers/%s/top", id)
+	if len(v) > 0 {
+		uri += "?" + v.Encode()
+	}
+	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
+		return procs, err
+	} else {
+		err := json.Unmarshal(data, &procs)
+		return procs, err
+	}
+}
+
+type FsChange struct {
+	Path string
+	Kind int
+}
+
+func (client *DockerClient) ContainerChanges(id string) ([]FsChange, error) {
+	uri := fmt.Sprintf("containers/%s/changes", id)
+	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
+		return nil, err
+	} else {
+		var changes []FsChange
+		err := json.Unmarshal(data, &changes)
+		return changes, err
+	}
+}
+
 // TODO
 // containers/(id)/wait
 // containers/(id)/rename
-// containers/(id)/top
 // containers/(id)/copy
 // containers/(id)/attach
 // containers/(id)/export
 // containers/(id)/stats
 // containers/(id)/resize?h=<height>&w=<width>
 // containers/(id)/attach/ws
-// containers/(id)/changes
