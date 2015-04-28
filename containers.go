@@ -295,6 +295,32 @@ func (client *DockerClient) RemoveContainer(id string, force, volumes bool) erro
 	return err
 }
 
+func (client *DockerClient) RenameContainer(id string, name string) error {
+	v := url.Values{}
+	v.Set("name", name)
+	uri := fmt.Sprintf("containers/%s/rename?%s", id, v.Encode())
+	_, err := client.sendRequest("POST", uri, nil, nil)
+	return err
+}
+
+// This will block the call routine until the container is stopped
+func (client *DockerClient) WaitContainer(id string) (int, error) {
+	uri := fmt.Sprintf("containers/%s/wait", id)
+	if data, err := client.sendRequest("POST", uri, nil, nil); err != nil {
+		return 0, err
+	} else {
+		var ret map[string]int
+		if err := json.Unmarshal(data, &ret); err != nil {
+			return 0, err
+		}
+		if code, ok := ret["StatusCode"]; ok {
+			return code, nil
+		} else {
+			return 0, fmt.Errorf("Cannot get StatusCode from return data, %+v", ret)
+		}
+	}
+}
+
 func (client *DockerClient) ContainerLogs(id string, stdout, stderr, timestamps bool, tail ...int) ([]LogEntry, error) {
 	// no following mode
 	v := url.Values{}
@@ -354,12 +380,8 @@ func (client *DockerClient) ContainerChanges(id string) ([]FsChange, error) {
 	}
 }
 
-// TODO
-// containers/(id)/wait
-// containers/(id)/rename
 // containers/(id)/copy
 // containers/(id)/attach
 // containers/(id)/export
-// containers/(id)/stats
 // containers/(id)/resize?h=<height>&w=<width>
 // containers/(id)/attach/ws

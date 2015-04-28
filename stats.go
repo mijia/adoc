@@ -82,3 +82,6 @@ func (client *DockerClient) ContainerStats(id string) (Stats, error) {
 	})
 	return stats, err
 }
+
+// TODO should allow to stream the stats
+// func (client *DockerClient) MonitorContainerStats(id string ....)

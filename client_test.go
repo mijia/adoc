@@ -45,11 +45,18 @@ func TestContainers(t *testing.T) {
 	}
 	d("Containers", containers)
 
+	if err := docker.RenameContainer(id, "hello_renamed"); err != nil {
+		t.Fatalf("Cannot rename the container, %s", err)
+	}
+
 	container, err := docker.InspectContainer(id)
 	if err != nil {
 		t.Fatalf("Cannot inpsect container, id=%s, %s", id, err)
 	}
 	d("Container", container)
+	if container.Name != "/hello_renamed" {
+		t.Fatalf("Rename failed, need=%s, but got=%s", "hello_renamed", container.Name)
+	}
 
 	if changes, err := docker.ContainerChanges(id); err != nil {
 		t.Fatalf("Cannot get container changes, %s", err)
@@ -101,13 +108,19 @@ func TestContainerCtls(t *testing.T) {
 	} else {
 		d("Container Stats", stats)
 	}
-
 	if err := docker.PauseContainer(id); err != nil {
 		t.Fatalf("Cannot pause the container, %s", err)
 	}
 	if err := docker.UnpauseContainer(id); err != nil {
 		t.Fatalf("Cannot unpause the container, %s", err)
 	}
+
+	//if code, err := docker.WaitContainer(id); err != nil {
+	//t.Fatalf("Cannot wait on the container, %s", err)
+	//} else {
+	//d("Container Return", code)
+	//}
+
 	if err := docker.StopContainer(id); err != nil {
 		t.Fatalf("Cannot stop the container, %s", err)
 	}
