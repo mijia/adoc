@@ -1,8 +1,11 @@
 package adoc
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -168,18 +171,13 @@ type ContainerDetail struct {
 }
 
 func (client *DockerClient) ListContainers(showAll, showSize bool, filters string) ([]Container, error) {
-	all, size := 0, 0
-	if showAll {
-		all = 1
-	}
-	if showSize {
-		size = 1
-	}
-	uri := fmt.Sprintf("containers/json?all=%d&size=%d", all, size)
+	v := url.Values{}
+	v.Set("all", strconv.FormatBool(showAll))
+	v.Set("size", strconv.FormatBool(showSize))
 	if filters != "" {
-		uri += "&filters=" + filters
+		v.Set("filters", filters)
 	}
-
+	uri := fmt.Sprintf("containers/json?%s", v.Encode())
 	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
 		return nil, err
 	} else {
@@ -190,8 +188,6 @@ func (client *DockerClient) ListContainers(showAll, showSize bool, filters strin
 		return ret, nil
 	}
 }
-
-// CreateContainer
 
 func (client *DockerClient) InspectContainer(id string) (ContainerDetail, error) {
 	uri := fmt.Sprintf("containers/%s/json", id)
@@ -206,3 +202,125 @@ func (client *DockerClient) InspectContainer(id string) (ContainerDetail, error)
 		return ret, nil
 	}
 }
+
+func (client *DockerClient) CreateContainer(containerConf ContainerConfig, hostConf HostConfig, name ...string) (string, error) {
+	var config struct {
+		ContainerConfig
+		HostConfig HostConfig
+	}
+	config.ContainerConfig = containerConf
+	config.HostConfig = hostConf
+
+	if body, err := json.Marshal(config); err != nil {
+		return "", err
+	} else {
+		uri := "containers/create"
+		if len(name) > 0 && name[0] != "" {
+			v := url.Values{}
+			v.Set("name", name[0])
+			uri += "?" + v.Encode()
+		}
+		if data, err := client.sendRequest("POST", uri, body, nil); err != nil {
+			return "", err
+		} else {
+			var resp struct {
+				Id       string
+				Warnings []string
+			}
+			if err := json.Unmarshal(data, &resp); err != nil {
+				return "", err
+			}
+			return resp.Id, nil
+		}
+	}
+}
+
+func (client *DockerClient) StartContainer(id string) error {
+	uri := fmt.Sprintf("containers/%s/start", id)
+	_, err := client.sendRequest("POST", uri, nil, nil)
+	return err
+}
+
+func (client *DockerClient) StopContainer(id string, timeout ...int) error {
+	uri := fmt.Sprintf("containers/%s/stop", id)
+	if len(timeout) > 0 && timeout[0] >= 0 {
+		v := url.Values{}
+		v.Set("t", fmt.Sprintf("%d", timeout[0]))
+		uri += "?" + v.Encode()
+	}
+	_, err := client.sendRequest("POST", uri, nil, nil)
+	return err
+}
+
+func (client *DockerClient) RestartContainer(id string, timeout ...int) error {
+	uri := fmt.Sprintf("containers/%s/restart", id)
+	if len(timeout) > 0 && timeout[0] >= 0 {
+		v := url.Values{}
+		v.Set("t", fmt.Sprintf("%d", timeout[0]))
+		uri += "?" + v.Encode()
+	}
+	_, err := client.sendRequest("POST", uri, nil, nil)
+	return err
+}
+
+func (client *DockerClient) KillContainer(id string, signal ...string) error {
+	uri := fmt.Sprintf("containers/%s/kill", id)
+	if len(signal) > 0 && signal[0] != "" {
+		v := url.Values{}
+		v.Set("signal", signal[0])
+		uri += "?" + v.Encode()
+	}
+	_, err := client.sendRequest("POST", uri, nil, nil)
+	return err
+}
+
+func (client *DockerClient) PauseContainer(id string) error {
+	uri := fmt.Sprintf("containers/%s/pause", id)
+	_, err := client.sendRequest("POST", uri, nil, nil)
+	return err
+}
+
+func (client *DockerClient) UnpauseContainer(id string) error {
+	uri := fmt.Sprintf("containers/%s/unpause", id)
+	_, err := client.sendRequest("POST", uri, nil, nil)
+	return err
+}
+
+func (client *DockerClient) RemoveContainer(id string, force, volumes bool) error {
+	v := url.Values{}
+	v.Set("force", strconv.FormatBool(force))
+	v.Set("v", strconv.FormatBool(volumes))
+	uri := fmt.Sprintf("containers/%s?%s", id, v.Encode())
+	_, err := client.sendRequest("DELETE", uri, nil, nil)
+	return err
+}
+
+// We are not providing following mode
+func (client *DockerClient) ContainerLogs(id string, stdout, stderr, timestamps bool, tail ...int) ([]LogEntry, error) {
+	v := url.Values{}
+	v.Set("stdout", strconv.FormatBool(stdout))
+	v.Set("stderr", strconv.FormatBool(stderr))
+	v.Set("timestamps", strconv.FormatBool(timestamps))
+	if len(tail) > 0 && tail[0] >= 0 {
+		v.Set("tail", fmt.Sprintf("%d", tail[0]))
+	}
+	uri := fmt.Sprintf("containers/%s/logs?%s", id, v.Encode())
+	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
+		return nil, err
+	} else {
+		buffer := bytes.NewBuffer(data)
+		return ReadAllDockerLogs(buffer)
+	}
+}
+
+// TODO
+// containers/(id)/wait
+// containers/(id)/rename
+// containers/(id)/top
+// containers/(id)/copy
+// containers/(id)/attach
+// containers/(id)/export
+// containers/(id)/stats
+// containers/(id)/resize?h=<height>&w=<width>
+// containers/(id)/attach/ws
+// containers/(id)/changes

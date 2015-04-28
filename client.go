@@ -52,7 +52,7 @@ func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout tim
 	}
 	httpClient := newHttpClient(u, tlsConfig, timeout)
 	clientApiVersion := kDefaultApiVersion
-	if len(apiVersion) > 1 && apiVersion[0] != "" {
+	if len(apiVersion) > 0 && apiVersion[0] != "" {
 		clientApiVersion = apiVersion[0]
 		if !strings.HasPrefix(clientApiVersion, "v") {
 			clientApiVersion = "v" + clientApiVersion
