@@ -1,9 +1,9 @@
 package adoc
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 	"time"
@@ -170,12 +170,12 @@ type ContainerDetail struct {
 	VolumesRW       map[string]string
 }
 
-func (client *DockerClient) ListContainers(showAll, showSize bool, filters string) ([]Container, error) {
+func (client *DockerClient) ListContainers(showAll, showSize bool, filters ...string) ([]Container, error) {
 	v := url.Values{}
 	v.Set("all", strconv.FormatBool(showAll))
 	v.Set("size", strconv.FormatBool(showSize))
-	if filters != "" {
-		v.Set("filters", filters)
+	if len(filters) > 0 && filters[0] != "" {
+		v.Set("filters", filters[0])
 	}
 	uri := fmt.Sprintf("containers/json?%s", v.Encode())
 	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
@@ -305,12 +305,14 @@ func (client *DockerClient) ContainerLogs(id string, stdout, stderr, timestamps 
 		v.Set("tail", fmt.Sprintf("%d", tail[0]))
 	}
 	uri := fmt.Sprintf("containers/%s/logs?%s", id, v.Encode())
-	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
-		return nil, err
-	} else {
-		buffer := bytes.NewBuffer(data)
-		return ReadAllDockerLogs(buffer)
-	}
+
+	var entries []LogEntry
+	err := client.sendRequestCallback("GET", uri, nil, nil, func(resp *http.Response) error {
+		var cbErr error
+		entries, cbErr = ReadAllDockerLogs(resp.Body)
+		return cbErr
+	})
+	return entries, err
 }
 
 // TODO

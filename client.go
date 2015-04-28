@@ -3,6 +3,7 @@ package adoc
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +13,18 @@ import (
 	"strings"
 	"time"
 )
+
+type AuthConfig struct {
+	UserName string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	Email    string `json:"email,omitempty"`
+}
+
+func (auth AuthConfig) Encode() string {
+	var buffer bytes.Buffer
+	json.NewEncoder(&buffer).Encode(auth)
+	return base64.URLEncoding.EncodeToString(buffer.Bytes())
+}
 
 type Error struct {
 	StatusCode int
@@ -66,13 +79,15 @@ func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout tim
 	}, nil
 }
 
-func (client *DockerClient) sendRequest(method string, path string, body []byte, headers map[string]string) ([]byte, error) {
+type responseCallback func(resp *http.Response) error
+
+func (client *DockerClient) sendRequestCallback(method string, path string, body []byte, headers map[string]string, callback responseCallback) error {
 	b := bytes.NewBuffer(body)
 	urlPath := fmt.Sprintf("%s/%s/%s", client.daemonUrl.String(), client.apiVersion, path)
 	fmt.Println(urlPath)
 	req, err := http.NewRequest(method, urlPath, b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	if headers != nil {
@@ -83,20 +98,28 @@ func (client *DockerClient) sendRequest(method string, path string, body []byte,
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
 		if !strings.Contains(err.Error(), "connection refused") && client.tlsConfig == nil {
-			return nil, fmt.Errorf("%v. Are you trying to connect to a TLS-enabled daemon without TLS?", err)
+			return fmt.Errorf("%v. Are you trying to connect to a TLS-enabled daemon without TLS?", err)
 		}
-		return nil, err
+		return err
+	}
+	if resp.StatusCode >= 400 {
+		return Error{resp.StatusCode, resp.Status}
 	}
 
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode >= 400 {
-		return nil, Error{resp.StatusCode, resp.Status}
-	}
-	return data, nil
+	return callback(resp)
+}
+
+func (client *DockerClient) sendRequest(method string, path string, body []byte, headers map[string]string) ([]byte, error) {
+	var data []byte
+	err := client.sendRequestCallback(method, path, body, headers, func(resp *http.Response) error {
+		var cbErr error
+		if data, cbErr = ioutil.ReadAll(resp.Body); cbErr != nil {
+			return cbErr
+		}
+		return nil
+	})
+	return data, err
 }
 
 func newHttpClient(u *url.URL, tlsConfig *tls.Config, timeout time.Duration) *http.Client {

@@ -104,6 +104,27 @@ func TestContainerCtls(t *testing.T) {
 	}
 }
 
+func TestImages(t *testing.T) {
+	fmt.Println("\n\n\n")
+	if images, err := docker.ListImages(false); err != nil {
+		t.Fatalf("Cannot list all the images, %s", err)
+	} else {
+		d("Images", images)
+	}
+	if image, err := docker.InspectImage("busybox"); err != nil {
+		t.Fatalf("Cannot inspect image busybox, %s", err)
+	} else {
+		d("Image Detail", image)
+	}
+
+	if err := docker.RemoveImage("busybox", false, false); err != nil {
+		t.Fatalf("Cannot remove the image, %s", err)
+	}
+	if err := docker.PullImage("busybox", "latest"); err != nil {
+		t.Fatalf("Cannot pull the image, %s", err)
+	}
+}
+
 func d(msg string, o interface{}) {
 	fmt.Println(msg)
 	fmt.Printf("%+v\n", o)
