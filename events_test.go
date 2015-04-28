@@ -51,4 +51,5 @@ func TestStatsMonitor(t *testing.T) {
 	})
 	time.Sleep(30 * time.Second)
 	docker.StopMonitor(monitorId)
+	docker.RemoveContainer(id, true, true)
 }
