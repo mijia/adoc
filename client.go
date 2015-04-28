@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -45,6 +47,9 @@ type DockerClient struct {
 	httpClient *http.Client
 	tlsConfig  *tls.Config
 	apiVersion string
+
+	monitorLock sync.RWMutex
+	monitors    map[int64]struct{}
 }
 
 func NewDockerClient(daemonUrl string, tlsConfig *tls.Config, apiVersion ...string) (*DockerClient, error) {
@@ -76,6 +81,7 @@ func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout tim
 		httpClient: httpClient,
 		tlsConfig:  tlsConfig,
 		apiVersion: clientApiVersion,
+		monitors:   make(map[int64]struct{}),
 	}, nil
 }
 
@@ -228,3 +234,9 @@ func (client *DockerClient) Ping() (bool, error) {
 // exec/(id)/start: Exec Start
 // exec/(id)/resize
 // exec/(id)/json
+
+var random *rand.Rand
+
+func init() {
+	random = rand.New(rand.NewSource(time.Now().UnixNano()))
+}

@@ -380,6 +380,7 @@ func (client *DockerClient) ContainerChanges(id string) ([]FsChange, error) {
 	}
 }
 
+// Missing apis for
 // containers/(id)/copy
 // containers/(id)/attach
 // containers/(id)/export

@@ -102,7 +102,7 @@ func (client *DockerClient) RemoveImage(name string, force, noprune bool) error 
 	return err
 }
 
-// TODO
+// Missing apis for
 // build: Build image from a Dockerfile
 // images/(name)/history
 // images/(name)/push
