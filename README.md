@@ -1,2 +1,1 @@
-# adoc
-Another Docker Client in Go
+# Another DOcker Client in Go
