@@ -42,14 +42,30 @@ const (
 	kDefaultTimeout    = 30
 )
 
+var apiVersions = map[string]bool{
+	"v1.17": true,
+	"v1.18": true,
+}
+
 type DockerClient struct {
 	daemonUrl  *url.URL
 	httpClient *http.Client
 	tlsConfig  *tls.Config
 	apiVersion string
+	isSwarm    bool
 
 	monitorLock sync.RWMutex
 	monitors    map[int64]struct{}
+}
+
+func NewSwarmClient(swarmUrl string, tlsConfig *tls.Config, apiVersion ...string) (*DockerClient, error) {
+	return NewSwarmClientTimeout(swarmUrl, tlsConfig, time.Duration(kDefaultTimeout*time.Second), apiVersion...)
+}
+
+func NewSwarmClientTimeout(swarmUrl string, tlsConfig *tls.Config, timeout time.Duration, apiVersion ...string) (*DockerClient, error) {
+	docker, err := NewDockerClientTimeout(swarmUrl, tlsConfig, timeout, apiVersion...)
+	docker.isSwarm = true
+	return docker, err
 }
 
 func NewDockerClient(daemonUrl string, tlsConfig *tls.Config, apiVersion ...string) (*DockerClient, error) {
@@ -76,13 +92,16 @@ func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout tim
 			clientApiVersion = "v" + clientApiVersion
 		}
 	}
+	if _, checked := apiVersions[clientApiVersion]; !checked {
+		err = fmt.Errorf("*WARNING: Adoc haven't check out if the remote api version %s is supported, maybe not stable, but you can keep using the client anyway.", clientApiVersion)
+	}
 	return &DockerClient{
 		daemonUrl:  u,
 		httpClient: httpClient,
 		tlsConfig:  tlsConfig,
 		apiVersion: clientApiVersion,
 		monitors:   make(map[int64]struct{}),
-	}, nil
+	}, err
 }
 
 type responseCallback func(resp *http.Response) error
@@ -90,7 +109,7 @@ type responseCallback func(resp *http.Response) error
 func (client *DockerClient) sendRequestCallback(method string, path string, body []byte, headers map[string]string, callback responseCallback) error {
 	b := bytes.NewBuffer(body)
 	urlPath := fmt.Sprintf("%s/%s/%s", client.daemonUrl.String(), client.apiVersion, path)
-	fmt.Println(urlPath)
+	logger.Debugf("SendRequest %q, [%s]", method, urlPath)
 	req, err := http.NewRequest(method, urlPath, b)
 	if err != nil {
 		return err
@@ -156,12 +175,12 @@ func newHttpClient(u *url.URL, tlsConfig *tls.Config, timeout time.Duration) *ht
 
 type Version struct {
 	ApiVersion    string
-	Arch          string
 	GitCommit     string
 	GoVersion     string
-	KernelVersion string
-	Os            string
 	Version       string
+	Os            string // v1.18
+	Arch          string // v1.18
+	KernelVersion string // v1.18
 }
 
 type DockerInfo struct {
@@ -188,7 +207,10 @@ type DockerInfo struct {
 	Name               string
 	OperatingSystem    string
 	SwapLimit          int
-	SystemTime         time.Time
+	HttpProxy          string    // v1.18
+	HttpsProxy         string    // v1.18
+	NoProxy            string    // v1.18
+	SystemTime         time.Time // v1.18
 }
 
 func (client *DockerClient) Version() (Version, error) {
@@ -196,10 +218,8 @@ func (client *DockerClient) Version() (Version, error) {
 	if data, err := client.sendRequest("GET", "version", nil, nil); err != nil {
 		return Version{}, err
 	} else {
-		if err := json.Unmarshal(data, &ret); err != nil {
-			return ret, err
-		}
-		return ret, nil
+		err := json.Unmarshal(data, &ret)
+		return ret, err
 	}
 }
 
@@ -208,10 +228,8 @@ func (client *DockerClient) Info() (DockerInfo, error) {
 	if data, err := client.sendRequest("GET", "info", nil, nil); err != nil {
 		return ret, err
 	} else {
-		if err := json.Unmarshal(data, &ret); err != nil {
-			return ret, err
-		}
-		return ret, nil
+		err := json.Unmarshal(data, &ret)
+		return ret, err
 	}
 }
 

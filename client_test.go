@@ -164,5 +164,10 @@ func d(msg string, o interface{}) {
 var docker *DockerClient
 
 func init() {
-	docker, _ = NewDockerClient("tcp://192.168.51.2:2375", nil)
+	EnableDebug()
+	var err error
+	docker, err = NewDockerClient("tcp://192.168.51.2:2375", nil, "1.15")
+	if err != nil {
+		fmt.Println(err)
+	}
 }

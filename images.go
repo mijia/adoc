@@ -18,10 +18,10 @@ type Image struct {
 	Id          string
 	Labels      map[string]string
 	ParentId    string
-	RepoDigests []string
 	RepoTags    []string
 	Size        int64
 	VirtualSize int64
+	RepoDigests []string // v1.18
 }
 
 type ImageDetail struct {

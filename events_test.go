@@ -23,7 +23,7 @@ func TestEventsMonitor(t *testing.T) {
 		}
 	})
 	fmt.Println("Please do some docker operations")
-	time.Sleep(2 * time.Minute)
+	time.Sleep(1 * time.Minute)
 	docker.StopMonitor(monitorId)
 }
 

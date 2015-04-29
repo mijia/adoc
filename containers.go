@@ -116,6 +116,7 @@ type PortBinding struct {
 	HostIp   string
 	HostPort string
 }
+
 type NetworkSettings struct {
 	Bridge                 string
 	Gateway                string
@@ -182,24 +183,19 @@ func (client *DockerClient) ListContainers(showAll, showSize bool, filters ...st
 		return nil, err
 	} else {
 		var ret []Container
-		if err := json.Unmarshal(data, &ret); err != nil {
-			return nil, err
-		}
-		return ret, nil
+		err := json.Unmarshal(data, &ret)
+		return ret, err
 	}
 }
 
 func (client *DockerClient) InspectContainer(id string) (ContainerDetail, error) {
 	uri := fmt.Sprintf("containers/%s/json", id)
-
 	var ret ContainerDetail
 	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
 		return ret, err
 	} else {
-		if err := json.Unmarshal(data, &ret); err != nil {
-			return ret, err
-		}
-		return ret, nil
+		err := json.Unmarshal(data, &ret)
+		return ret, err
 	}
 }
 
@@ -227,10 +223,11 @@ func (client *DockerClient) CreateContainer(containerConf ContainerConfig, hostC
 				Id       string
 				Warnings []string
 			}
-			if err := json.Unmarshal(data, &resp); err != nil {
-				return "", err
+			err := json.Unmarshal(data, &resp)
+			if len(resp.Warnings) > 0 {
+				logger.Warnf("Create container returns warning from docker daemon: %+v", resp.Warnings)
 			}
-			return resp.Id, nil
+			return resp.Id, err
 		}
 	}
 }
@@ -316,6 +313,7 @@ func (client *DockerClient) WaitContainer(id string) (int, error) {
 		if code, ok := ret["StatusCode"]; ok {
 			return code, nil
 		} else {
+			logger.Warnf("There is no StatusCode key inside results map, the API maybe changed, ret=%+v", ret)
 			return 0, fmt.Errorf("Cannot get StatusCode from return data, %+v", ret)
 		}
 	}
