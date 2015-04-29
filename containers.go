@@ -18,6 +18,7 @@ type Port struct {
 	Type        string
 }
 
+// Container defines basic container information for ListContainers
 type Container struct {
 	Command    string
 	Created    int64
@@ -31,6 +32,7 @@ type Container struct {
 	Status     string
 }
 
+// ContainerConfig defines basic container creation data stucture
 type ContainerConfig struct {
 	AttachStderr    bool
 	AttachStdin     bool
@@ -81,6 +83,7 @@ type LogConfig struct {
 	Config map[string]string
 }
 
+// HostConfig defines basic host configuration for container to run
 type HostConfig struct {
 	Binds           []string
 	CapAdd          []string
@@ -130,6 +133,7 @@ type NetworkSettings struct {
 	Ports                  map[string][]PortBinding
 }
 
+// ContainerState defines container running state from inspection
 type ContainerState struct {
 	Dead       bool
 	Error      string
@@ -143,6 +147,7 @@ type ContainerState struct {
 	StartedAt  time.Time
 }
 
+// SwarmNode defines the swarm api data for container running node
 type SwarmNode struct {
 	Name string
 	Id   string
@@ -150,6 +155,7 @@ type SwarmNode struct {
 	Ip   string
 }
 
+// ContainerDetail defines the detail data of the container from inspection, including the swarm node infor
 type ContainerDetail struct {
 	AppArmorProfile string
 	Args            []string
@@ -177,6 +183,7 @@ type ContainerDetail struct {
 	Node            SwarmNode // swarm api
 }
 
+// ListContainers returns containers data, showAll flag defines if you want to show all the containers including the stopped ones
 func (client *DockerClient) ListContainers(showAll, showSize bool, filters ...string) ([]Container, error) {
 	v := url.Values{}
 	v.Set("all", formatBoolToIntString(showAll))
@@ -194,6 +201,7 @@ func (client *DockerClient) ListContainers(showAll, showSize bool, filters ...st
 	}
 }
 
+// InspectContainer returns container detail data with container id
 func (client *DockerClient) InspectContainer(id string) (ContainerDetail, error) {
 	uri := fmt.Sprintf("containers/%s/json", id)
 	var ret ContainerDetail
