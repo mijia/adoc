@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 )
 
@@ -42,7 +41,7 @@ type ImageDetail struct {
 
 func (client *DockerClient) ListImages(showAll bool, filters ...string) ([]Image, error) {
 	v := url.Values{}
-	v.Set("all", strconv.FormatBool(showAll))
+	v.Set("all", formatBoolToIntString(showAll))
 	if len(filters) > 0 && filters[0] != "" {
 		v.Set("filters", filters[0])
 	}
@@ -95,8 +94,8 @@ func (client *DockerClient) PullImage(name string, tag string, authConfig ...Aut
 
 func (client *DockerClient) RemoveImage(name string, force, noprune bool) error {
 	v := url.Values{}
-	v.Set("force", strconv.FormatBool(force))
-	v.Set("noprune", strconv.FormatBool(noprune))
+	v.Set("force", formatBoolToIntString(force))
+	v.Set("noprune", formatBoolToIntString(noprune))
 	uri := fmt.Sprintf("images/%s?%s", name, v.Encode())
 	_, err := client.sendRequest("DELETE", uri, nil, nil)
 	return err

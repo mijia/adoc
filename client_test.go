@@ -29,8 +29,8 @@ func TestContainers(t *testing.T) {
 	containerConf := ContainerConfig{
 		AttachStdout: true,
 		AttachStderr: true,
-		Cmd:          []string{"date"},
-		Image:        "busybox",
+		Cmd:          []string{"python", "app.py"},
+		Image:        "training/webapp",
 	}
 	id, err := docker.CreateContainer(containerConf, HostConfig{})
 	if err != nil {
@@ -70,7 +70,9 @@ func TestContainers(t *testing.T) {
 		d("Container Logs", logs)
 	}
 
-	docker.RemoveContainer(id, true, true)
+	if err := docker.RemoveContainer(id, true, false); err != nil {
+		t.Fatalf("Cannot remove the container, %s", err)
+	}
 }
 
 func TestContainerCtls(t *testing.T) {
@@ -166,7 +168,8 @@ var docker *DockerClient
 func init() {
 	EnableDebug()
 	var err error
-	docker, err = NewDockerClient("tcp://192.168.51.2:2375", nil, "1.15")
+	//docker, err = NewDockerClient("tcp://192.168.51.2:2375", nil)
+	docker, err = NewSwarmClient("tcp://192.168.51.2:2376", nil)
 	if err != nil {
 		fmt.Println(err)
 	}

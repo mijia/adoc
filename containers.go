@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 )
 
@@ -145,6 +144,13 @@ type ContainerState struct {
 	StartedAt  time.Time
 }
 
+type SwarmNode struct {
+	Name string
+	Id   string
+	Addr string
+	Ip   string
+}
+
 type ContainerDetail struct {
 	AppArmorProfile string
 	Args            []string
@@ -169,12 +175,13 @@ type ContainerDetail struct {
 	State           ContainerState
 	Volumes         map[string]string
 	VolumesRW       map[string]string
+	Node            SwarmNode // swarm api
 }
 
 func (client *DockerClient) ListContainers(showAll, showSize bool, filters ...string) ([]Container, error) {
 	v := url.Values{}
-	v.Set("all", strconv.FormatBool(showAll))
-	v.Set("size", strconv.FormatBool(showSize))
+	v.Set("all", formatBoolToIntString(showAll))
+	v.Set("size", formatBoolToIntString(showSize))
 	if len(filters) > 0 && filters[0] != "" {
 		v.Set("filters", filters[0])
 	}
@@ -285,8 +292,8 @@ func (client *DockerClient) UnpauseContainer(id string) error {
 
 func (client *DockerClient) RemoveContainer(id string, force, volumes bool) error {
 	v := url.Values{}
-	v.Set("force", strconv.FormatBool(force))
-	v.Set("v", strconv.FormatBool(volumes))
+	v.Set("force", formatBoolToIntString(force))
+	v.Set("v", formatBoolToIntString(volumes))
 	uri := fmt.Sprintf("containers/%s?%s", id, v.Encode())
 	_, err := client.sendRequest("DELETE", uri, nil, nil)
 	return err
@@ -322,9 +329,9 @@ func (client *DockerClient) WaitContainer(id string) (int, error) {
 func (client *DockerClient) ContainerLogs(id string, stdout, stderr, timestamps bool, tail ...int) ([]LogEntry, error) {
 	// no following mode
 	v := url.Values{}
-	v.Set("stdout", strconv.FormatBool(stdout))
-	v.Set("stderr", strconv.FormatBool(stderr))
-	v.Set("timestamps", strconv.FormatBool(timestamps))
+	v.Set("stdout", formatBoolToIntString(stdout))
+	v.Set("stderr", formatBoolToIntString(stderr))
+	v.Set("timestamps", formatBoolToIntString(timestamps))
 	if len(tail) > 0 && tail[0] >= 0 {
 		v.Set("tail", fmt.Sprintf("%d", tail[0]))
 	}

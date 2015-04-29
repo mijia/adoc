@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -147,29 +146,6 @@ func (client *DockerClient) sendRequest(method string, path string, body []byte,
 	return data, err
 }
 
-func newHttpClient(u *url.URL, tlsConfig *tls.Config, timeout time.Duration) *http.Client {
-	transport := &http.Transport{
-		TLSClientConfig: tlsConfig,
-	}
-	switch u.Scheme {
-	case "unix":
-		socketPath := u.Path
-		transport.Dial = func(proto, addr string) (net.Conn, error) {
-			return net.DialTimeout("unix", socketPath, timeout)
-		}
-		u.Scheme = "http"
-		u.Host = "unix.sock"
-		u.Path = ""
-	default:
-		transport.Dial = func(proto, addr string) (net.Conn, error) {
-			return net.DialTimeout(proto, addr, timeout)
-		}
-	}
-	return &http.Client{
-		Transport: transport,
-	}
-}
-
 // This part contains the misc apis listed in
 // https://docs.docker.com/reference/api/docker_remote_api_v1.17/#23-misc
 
@@ -185,10 +161,9 @@ type Version struct {
 
 type DockerInfo struct {
 	Containers         int64
-	Debug              int
 	DockerRootDir      string
 	Driver             string
-	DriverStatus       [][]string
+	DriverStatus       [][2]string
 	ExecutionDriver    string
 	ID                 string
 	IPv4Forwarding     int
@@ -211,6 +186,7 @@ type DockerInfo struct {
 	HttpsProxy         string    // v1.18
 	NoProxy            string    // v1.18
 	SystemTime         time.Time // v1.18
+	//Debug              bool // this will conflict with docker api and swarm api, fuck
 }
 
 func (client *DockerClient) Version() (Version, error) {

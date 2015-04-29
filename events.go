@@ -35,6 +35,10 @@ type Event struct {
 }
 
 func (client *DockerClient) EventsSince(filters string, since time.Duration, until ...time.Duration) ([]Event, error) {
+	if client.isSwarm {
+		return nil, fmt.Errorf("Swarm doesn't support the events polling mode.")
+	}
+
 	v := url.Values{}
 	if filters != "" {
 		v.Set("filters", filters)
