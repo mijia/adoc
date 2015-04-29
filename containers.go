@@ -128,7 +128,6 @@ type NetworkSettings struct {
 	LinkLocalIPv6PrefixLen int
 	MacAddress             string
 	Ports                  map[string][]PortBinding
-	// PortMapping: null,
 }
 
 type ContainerState struct {
