@@ -149,10 +149,13 @@ type ContainerState struct {
 
 // SwarmNode defines the swarm api data for container running node
 type SwarmNode struct {
-	Name string
-	Id   string
-	Addr string
-	Ip   string
+	Name   string
+	ID     string
+	Addr   string
+	IP     string
+	Cpus   int
+	Memory int64
+	Labels map[string]string
 }
 
 // ContainerDetail defines the detail data of the container from inspection, including the swarm node infor
