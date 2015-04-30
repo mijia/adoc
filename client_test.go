@@ -137,6 +137,52 @@ func TestContainerCtls(t *testing.T) {
 	}
 }
 
+func TestContainerExec(t *testing.T) {
+	containerConf := ContainerConfig{
+		AttachStdout: true,
+		AttachStderr: true,
+		Cmd:          []string{"python", "app.py"},
+		Image:        "training/webapp",
+	}
+	hostConf := HostConfig{
+		PortBindings: map[string][]PortBinding{
+			"5000/tcp": []PortBinding{
+				PortBinding{},
+			},
+		},
+	}
+	id, err := docker.CreateContainer(containerConf, hostConf)
+	if err != nil {
+		t.Fatalf("Cannot create the container, %s", err)
+	}
+	d("Created Container ID", id)
+
+	if err := docker.StartContainer(id); err != nil {
+		t.Fatalf("Cannot start the container, %s", err)
+	}
+
+	execConfig := ExecConfig{
+		AttachStdout: true,
+		AttachStderr: true,
+		Cmd:          []string{"ls", "-l", "/"},
+	}
+	execId, err := docker.CreateExec(id, execConfig)
+	if err != nil {
+		t.Fatalf("Cannot create exec inside container, %s", err)
+	}
+	d("Exec Id", execId)
+
+	if data, err := docker.StartExec(execId, false, true); err != nil {
+		t.Fatalf("Cannot start the exec inside container, %s", err)
+	} else {
+		d("Exec Results", string(data))
+	}
+
+	if err := docker.RemoveContainer(id, true, false); err != nil {
+		t.Fatalf("Cannot remove the container, %s", err)
+	}
+}
+
 func TestImages(t *testing.T) {
 	fmt.Println("\n\n\n")
 	if images, err := docker.ListImages(false); err != nil {
@@ -168,8 +214,8 @@ var docker *DockerClient
 func init() {
 	EnableDebug()
 	var err error
-	//docker, err = NewDockerClient("tcp://192.168.51.2:2375", nil)
-	docker, err = NewSwarmClient("tcp://192.168.51.2:2376", nil)
+	docker, err = NewDockerClient("tcp://192.168.51.2:2375", nil)
+	//docker, err = NewSwarmClient("tcp://192.168.51.2:2376", nil)
 	if err != nil {
 		fmt.Println(err)
 	}
