@@ -36,6 +36,20 @@ func (e Error) Error() string {
 	return fmt.Sprintf("%d: %s", e.StatusCode, e.Status)
 }
 
+func IsNotFound(err error) bool {
+	if adocErr, ok := err.(Error); ok {
+		return adocErr.StatusCode == 404
+	}
+	return false
+}
+
+func IsServerInternalError(err error) bool {
+	if adocErr, ok := err.(Error); ok {
+		return adocErr.StatusCode == 500
+	}
+	return false
+}
+
 const (
 	kDefaultApiVersion = "v1.17"
 	kDefaultTimeout    = 30
