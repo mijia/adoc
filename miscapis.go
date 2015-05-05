@@ -3,6 +3,8 @@ package adoc
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -17,6 +19,21 @@ type Version struct {
 	Os            string // v1.18
 	Arch          string // v1.18
 	KernelVersion string // v1.18
+}
+
+type SwarmNodeInfo struct {
+	Name       string
+	Address    string
+	Containers int64
+	CPUs       int
+	UsedCPUs   int
+	Memory     int64
+	UsedMemory int64
+}
+
+type SwarmInfo struct {
+	Containers int64
+	Nodes      []SwarmNodeInfo
 }
 
 type DockerInfo struct {
@@ -65,6 +82,52 @@ func (client *DockerClient) Version() (Version, error) {
 		err := json.Unmarshal(data, &ret)
 		return ret, err
 	}
+}
+
+func (client *DockerClient) IsSwarm() bool {
+	return client.isSwarm
+}
+
+func (client *DockerClient) SwarmInfo() (SwarmInfo, error) {
+	var ret SwarmInfo
+	if !client.isSwarm {
+		return ret, fmt.Errorf("The client is not a swarm client, please use Info()")
+	}
+	info, err := client.Info()
+	if err != nil {
+		return ret, err
+	}
+	ret.Containers = info.Containers
+	nodeCount := (len(info.DriverStatus) - 1) / 4
+	ret.Nodes = make([]SwarmNodeInfo, nodeCount)
+	for i := 0; i < nodeCount; i += 1 {
+		offset := i*4 + 1
+		if nodeInfo, err := parseSwarmNodeInfo(info.DriverStatus[offset : offset+4]); err == nil {
+			ret.Nodes[i] = nodeInfo
+		}
+	}
+	return ret, nil
+}
+
+func parseSwarmNodeInfo(data [][2]string) (ret SwarmNodeInfo, parseErr error) {
+	defer func() {
+		if err := recover(); err != nil {
+			parseErr = fmt.Errorf("Paniced when parse swarm node info, the protocol maybe changed, %s", err)
+			logger.Warnf(parseErr.Error())
+		}
+	}()
+	ret.Name = data[0][0]
+	ret.Address = data[0][1]
+	ret.Containers, _ = strconv.ParseInt(data[1][1], 10, 64)
+
+	cpuInfo := strings.Split(data[2][1], "/")
+	ret.UsedCPUs, _ = strconv.Atoi(strings.TrimSpace(cpuInfo[0]))
+	ret.CPUs, _ = strconv.Atoi(strings.TrimSpace(cpuInfo[1]))
+
+	memInfo := strings.Split(data[3][1], "/")
+	ret.UsedMemory, _ = ParseBytesSize(memInfo[0])
+	ret.Memory, _ = ParseBytesSize(memInfo[1])
+	return
 }
 
 func (client *DockerClient) Info() (DockerInfo, error) {

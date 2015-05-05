@@ -53,6 +53,7 @@ func IsServerInternalError(err error) bool {
 const (
 	kDefaultApiVersion = "v1.17"
 	kDefaultTimeout    = 30
+	kDefaultRWTimeout  = 60
 )
 
 var apiVersions = map[string]bool{
@@ -72,20 +73,26 @@ type DockerClient struct {
 }
 
 func NewSwarmClient(swarmUrl string, tlsConfig *tls.Config, apiVersion ...string) (*DockerClient, error) {
-	return NewSwarmClientTimeout(swarmUrl, tlsConfig, time.Duration(kDefaultTimeout*time.Second), apiVersion...)
+	return NewSwarmClientTimeout(swarmUrl, tlsConfig,
+		time.Duration(kDefaultTimeout*time.Second),
+		time.Duration(kDefaultRWTimeout*time.Second),
+		apiVersion...)
 }
 
-func NewSwarmClientTimeout(swarmUrl string, tlsConfig *tls.Config, timeout time.Duration, apiVersion ...string) (*DockerClient, error) {
-	docker, err := NewDockerClientTimeout(swarmUrl, tlsConfig, timeout, apiVersion...)
+func NewSwarmClientTimeout(swarmUrl string, tlsConfig *tls.Config, timeout time.Duration, rwTimeout time.Duration, apiVersion ...string) (*DockerClient, error) {
+	docker, err := NewDockerClientTimeout(swarmUrl, tlsConfig, timeout, rwTimeout, apiVersion...)
 	docker.isSwarm = true
 	return docker, err
 }
 
 func NewDockerClient(daemonUrl string, tlsConfig *tls.Config, apiVersion ...string) (*DockerClient, error) {
-	return NewDockerClientTimeout(daemonUrl, tlsConfig, time.Duration(kDefaultTimeout*time.Second), apiVersion...)
+	return NewDockerClientTimeout(daemonUrl, tlsConfig,
+		time.Duration(kDefaultTimeout*time.Second),
+		time.Duration(kDefaultRWTimeout*time.Second),
+		apiVersion...)
 }
 
-func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout time.Duration, apiVersion ...string) (*DockerClient, error) {
+func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout time.Duration, rwTimeout time.Duration, apiVersion ...string) (*DockerClient, error) {
 	u, err := url.Parse(daemonUrl)
 	if err != nil {
 		return nil, err
@@ -97,7 +104,7 @@ func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout tim
 			u.Scheme = "https"
 		}
 	}
-	httpClient := newHttpClient(u, tlsConfig, timeout)
+	httpClient := newHttpClient(u, tlsConfig, timeout, rwTimeout)
 	clientApiVersion := kDefaultApiVersion
 	if len(apiVersion) > 0 && apiVersion[0] != "" {
 		clientApiVersion = apiVersion[0]

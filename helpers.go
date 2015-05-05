@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func newHttpClient(u *url.URL, tlsConfig *tls.Config, timeout time.Duration) *http.Client {
+func newHttpClient(u *url.URL, tlsConfig *tls.Config, timeout time.Duration, rwTimeout time.Duration) *http.Client {
 	transport := &http.Transport{
 		TLSClientConfig: tlsConfig,
 	}
@@ -28,6 +28,7 @@ func newHttpClient(u *url.URL, tlsConfig *tls.Config, timeout time.Duration) *ht
 	}
 	return &http.Client{
 		Transport: transport,
+		Timeout:   rwTimeout,
 	}
 }
 

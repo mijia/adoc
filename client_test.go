@@ -12,11 +12,19 @@ func TestVersionAndInfo(t *testing.T) {
 	}
 	d("ApiVersion", version)
 
-	info, err := docker.Info()
-	if err != nil {
-		t.Fatalf("Cannot get docker info, %s", err)
+	if docker.IsSwarm() {
+		info, err := docker.SwarmInfo()
+		if err != nil {
+			t.Fatalf("Cannot get docker info, %s", err)
+		}
+		d("SwarmInfo", info)
+	} else {
+		info, err := docker.Info()
+		if err != nil {
+			t.Fatalf("Cannot get docker info, %s", err)
+		}
+		d("DockerInfo", info)
 	}
-	d("DockerInfo", info)
 
 	pong, err := docker.Ping()
 	if err != nil || !pong {
@@ -214,8 +222,8 @@ var docker *DockerClient
 func init() {
 	EnableDebug()
 	var err error
-	docker, err = NewDockerClient("tcp://192.168.51.2:2375", nil)
-	//docker, err = NewSwarmClient("tcp://192.168.51.2:2376", nil)
+	//docker, err = NewDockerClient("tcp://192.168.51.21:2375", nil)
+	docker, err = NewSwarmClient("tcp://192.168.51.21:8178", nil)
 	if err != nil {
 		fmt.Println(err)
 	}
