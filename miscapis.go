@@ -33,6 +33,8 @@ type SwarmNodeInfo struct {
 
 type SwarmInfo struct {
 	Containers int64
+	Strategy   string
+	Filters    string
 	Nodes      []SwarmNodeInfo
 }
 
@@ -98,10 +100,13 @@ func (client *DockerClient) SwarmInfo() (SwarmInfo, error) {
 		return ret, err
 	}
 	ret.Containers = info.Containers
-	nodeCount := (len(info.DriverStatus) - 1) / 4
+	ret.Strategy = info.DriverStatus[0][1]
+	ret.Filters = info.DriverStatus[1][1]
+
+	nodeCount, _ := strconv.Atoi(info.DriverStatus[2][1])
 	ret.Nodes = make([]SwarmNodeInfo, nodeCount)
 	for i := 0; i < nodeCount; i += 1 {
-		offset := i*4 + 1
+		offset := i*4 + 3
 		if nodeInfo, err := parseSwarmNodeInfo(info.DriverStatus[offset : offset+4]); err == nil {
 			ret.Nodes[i] = nodeInfo
 		}
