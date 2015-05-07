@@ -182,7 +182,7 @@ type ContainerDetail struct {
 	RestartCount    int
 	State           ContainerState
 	Volumes         map[string]string
-	VolumesRW       map[string]string
+	VolumesRW       map[string]bool
 	Node            SwarmNode // swarm api
 }
 
