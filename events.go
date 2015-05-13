@@ -28,10 +28,11 @@ const (
 )
 
 type Event struct {
-	Id     string `json:"id"`
-	Status string `json:"status"`
-	From   string `json:"from"`
-	Time   int64  `json:"time"`
+	Id     string    `json:"id"`
+	Status string    `json:"status"`
+	From   string    `json:"from"`
+	Time   int64     `json:"time"`
+	Node   SwarmNode `json:"node,omitempty"`
 }
 
 func (client *DockerClient) EventsSince(filters string, since time.Duration, until ...time.Duration) ([]Event, error) {
@@ -51,14 +52,13 @@ func (client *DockerClient) EventsSince(filters string, since time.Duration, unt
 	uri := fmt.Sprintf("events?%s", v.Encode())
 
 	events := make([]Event, 0)
-	emptyEvent := Event{}
 	err := client.sendRequestCallback("GET", uri, nil, nil, func(resp *http.Response) error {
 		var event Event
 		var cbErr error
 		decoder := json.NewDecoder(resp.Body)
 		for ; cbErr == nil; cbErr = decoder.Decode(&event) {
 			// Not sure about why there will be an empty event first
-			if cbErr == nil && event != emptyEvent {
+			if cbErr == nil && event.Status != "" {
 				events = append(events, event)
 			}
 		}
