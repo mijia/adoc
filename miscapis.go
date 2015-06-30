@@ -39,13 +39,13 @@ type SwarmInfo struct {
 }
 
 type DockerInfo struct {
-	Containers         int64
-	DockerRootDir      string
-	Driver             string
-	DriverStatus       [][2]string
-	ExecutionDriver    string
-	ID                 string
-	IPv4Forwarding     int
+	Containers      int64
+	DockerRootDir   string
+	Driver          string
+	DriverStatus    [][2]string
+	ExecutionDriver string
+	ID              string
+	//IPv4Forwarding     int
 	Images             int64
 	IndexServerAddress string
 	InitPath           string
@@ -53,18 +53,18 @@ type DockerInfo struct {
 	KernelVersion      string
 	Labels             []string
 	MemTotal           int64
-	MemoryLimit        int
-	NCPU               int64
-	NEventsListener    int64
-	NFd                int64
-	NGoroutines        int64
-	Name               string
-	OperatingSystem    string
-	SwapLimit          int
-	HttpProxy          string    // v1.18
-	HttpsProxy         string    // v1.18
-	NoProxy            string    // v1.18
-	SystemTime         time.Time // v1.18
+	//MemoryLimit        int
+	NCPU            int64
+	NEventsListener int64
+	NFd             int64
+	NGoroutines     int64
+	Name            string
+	OperatingSystem string
+	//SwapLimit          int
+	HttpProxy  string    // v1.18
+	HttpsProxy string    // v1.18
+	NoProxy    string    // v1.18
+	SystemTime time.Time // v1.18
 	//Debug              bool // this will conflict with docker api and swarm api, fuck
 }
 
