@@ -23,6 +23,7 @@ const (
 	DockerEventStart       = "start"
 	DockerEventStop        = "stop"
 	DockerEventUnpause     = "unpause"
+	DockerEventRename      = "rename"
 	DockerEventImageUntag  = "untag"
 	DockerEventImageDelete = "delete"
 )
