@@ -62,11 +62,12 @@ var apiVersions = map[string]bool{
 }
 
 type DockerClient struct {
-	daemonUrl  *url.URL
-	httpClient *http.Client
-	tlsConfig  *tls.Config
-	apiVersion string
-	isSwarm    bool
+	daemonUrl      *url.URL
+	httpClient     *http.Client
+	longpollClient *http.Client
+	tlsConfig      *tls.Config
+	apiVersion     string
+	isSwarm        bool
 
 	monitorLock sync.RWMutex
 	monitors    map[int64]struct{}
@@ -105,6 +106,7 @@ func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout tim
 		}
 	}
 	httpClient := newHttpClient(u, tlsConfig, timeout, rwTimeout)
+	longpollClient := newHttpClient(u, tlsConfig, timeout, 0)
 	clientApiVersion := kDefaultApiVersion
 	if len(apiVersion) > 0 && apiVersion[0] != "" {
 		clientApiVersion = apiVersion[0]
@@ -116,17 +118,18 @@ func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout tim
 		err = fmt.Errorf("*WARNING: Adoc haven't check out if the remote api version %s is supported, maybe not stable, but you can keep using the client anyway.", clientApiVersion)
 	}
 	return &DockerClient{
-		daemonUrl:  u,
-		httpClient: httpClient,
-		tlsConfig:  tlsConfig,
-		apiVersion: clientApiVersion,
-		monitors:   make(map[int64]struct{}),
+		daemonUrl:      u,
+		httpClient:     httpClient,
+		longpollClient: longpollClient,
+		tlsConfig:      tlsConfig,
+		apiVersion:     clientApiVersion,
+		monitors:       make(map[int64]struct{}),
 	}, err
 }
 
 type responseCallback func(resp *http.Response) error
 
-func (client *DockerClient) sendRequestCallback(method string, path string, body []byte, headers map[string]string, callback responseCallback) error {
+func (client *DockerClient) sendRequestCallback(method string, path string, body []byte, headers map[string]string, callback responseCallback, isLongpoll ...bool) error {
 	b := bytes.NewBuffer(body)
 	urlPath := fmt.Sprintf("%s/%s/%s", client.daemonUrl.String(), client.apiVersion, path)
 	logger.Debugf("SendRequest %q, [%s]", method, urlPath)
@@ -140,7 +143,11 @@ func (client *DockerClient) sendRequestCallback(method string, path string, body
 			req.Header.Add(key, value)
 		}
 	}
-	resp, err := client.httpClient.Do(req)
+	httpClient := client.httpClient
+	if len(isLongpoll) > 0 && isLongpoll[0] {
+		httpClient = client.longpollClient
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		if !strings.Contains(err.Error(), "connection refused") && client.tlsConfig == nil {
 			return fmt.Errorf("%v. Are you trying to connect to a TLS-enabled daemon without TLS?", err)
@@ -155,7 +162,7 @@ func (client *DockerClient) sendRequestCallback(method string, path string, body
 	return callback(resp)
 }
 
-func (client *DockerClient) sendRequest(method string, path string, body []byte, headers map[string]string) ([]byte, error) {
+func (client *DockerClient) sendRequest(method string, path string, body []byte, headers map[string]string, isLongpoll ...bool) ([]byte, error) {
 	var data []byte
 	err := client.sendRequestCallback(method, path, body, headers, func(resp *http.Response) error {
 		var cbErr error
@@ -163,7 +170,7 @@ func (client *DockerClient) sendRequest(method string, path string, body []byte,
 			return cbErr
 		}
 		return nil
-	})
+	}, isLongpoll...)
 	return data, err
 }
 

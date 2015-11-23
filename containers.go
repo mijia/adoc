@@ -233,7 +233,7 @@ func (client *DockerClient) CreateContainer(containerConf ContainerConfig, hostC
 			v.Set("name", name[0])
 			uri += "?" + v.Encode()
 		}
-		if data, err := client.sendRequest("POST", uri, body, nil); err != nil {
+		if data, err := client.sendRequest("POST", uri, body, nil, true); err != nil {
 			return "", err
 		} else {
 			var resp struct {
@@ -320,7 +320,7 @@ func (client *DockerClient) RenameContainer(id string, name string) error {
 // This will block the call routine until the container is stopped
 func (client *DockerClient) WaitContainer(id string) (int, error) {
 	uri := fmt.Sprintf("containers/%s/wait", id)
-	if data, err := client.sendRequest("POST", uri, nil, nil); err != nil {
+	if data, err := client.sendRequest("POST", uri, nil, nil, true); err != nil {
 		return 0, err
 	} else {
 		var ret map[string]int

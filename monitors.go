@@ -64,7 +64,7 @@ func (client *DockerClient) monitorEvents(monitorId int64, uri string, callback 
 			client.monitorLock.RUnlock()
 		}
 		return nil
-	})
+	}, true)
 	if err != nil && err != io.EOF {
 		callback(Event{}, err)
 	}
@@ -96,7 +96,7 @@ func (client *DockerClient) monitorStats(monitorId int64, uri string, callback S
 			client.monitorLock.RUnlock()
 		}
 		return nil
-	})
+	}, true)
 	if err != nil && err != io.EOF {
 		callback(Stats{}, err)
 	}

@@ -88,7 +88,7 @@ func (client *DockerClient) PullImage(name string, tag string, authConfig ...Aut
 			return fmt.Errorf("Pull image error: %s", errMsg)
 		}
 		return nil
-	})
+	}, true)
 	return err
 }
 
