@@ -57,6 +57,7 @@ type ContainerConfig struct {
 	StdinOnce       bool
 	Tty             bool
 	User            string
+	VolumeDriver    string
 	Volumes         map[string]struct{}
 	WorkingDir      string
 }
