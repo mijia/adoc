@@ -187,6 +187,21 @@ type ContainerDetail struct {
 	Node            SwarmNode // swarm api
 }
 
+type NetworkOptions struct {
+	Container      string
+	EndpointConfig EndpointConfig
+	Force          bool
+}
+
+type EndpointConfig struct {
+	IPAMConfig IPAMConfig
+}
+
+type IPAMConfig struct {
+	IPv4Address string
+	IPv6Address string
+}
+
 // ListContainers returns containers data, showAll flag defines if you want to show all the containers including the stopped ones
 func (client *DockerClient) ListContainers(showAll, showSize bool, filters ...string) ([]Container, error) {
 	v := url.Values{}
@@ -247,6 +262,32 @@ func (client *DockerClient) CreateContainer(containerConf ContainerConfig, hostC
 			}
 			return resp.Id, err
 		}
+	}
+}
+
+func (client *DockerClient) ConnectContainer(networkName string, id string, ipAddr string) error {
+	nc := NetworkOptions
+	nc.Container = id
+	nc.EndpointConfig.IPAMConfig.IPv4Address = ipAddr
+	if body, err := json.Marshal(nc); err != nil {
+		return err
+	} else {
+		url := fmt.Sprintf("networks/%s/connect", networkName)
+		_, err := client.sendRequest("POST", uri, body, nil)
+		return err
+	}
+}
+
+func (client *DockerClient) DisconncetContainer(networkName string, id string, force bool) error {
+	nc := NetworkOptions
+	nc.Container = id
+	nc.Force = force
+	if body, err := json.Marshal(nc); err != nil {
+		return err
+	} else {
+		url := fmt.Sprintf("networks/%s/disconnect", networkName)
+		_, err := client.sendRequest("POST", uri, nil, nil)
+		return err
 	}
 }
 
