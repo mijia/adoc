@@ -272,7 +272,7 @@ func (client *DockerClient) ConnectContainer(networkName string, id string, ipAd
 	if body, err := json.Marshal(nc); err != nil {
 		return err
 	} else {
-		url := fmt.Sprintf("networks/%s/connect", networkName)
+		uri := fmt.Sprintf("networks/%s/connect", networkName)
 		_, err := client.sendRequest("POST", uri, body, nil)
 		return err
 	}
@@ -285,7 +285,7 @@ func (client *DockerClient) DisconncetContainer(networkName string, id string, f
 	if body, err := json.Marshal(nc); err != nil {
 		return err
 	} else {
-		url := fmt.Sprintf("networks/%s/disconnect", networkName)
+		uri := fmt.Sprintf("networks/%s/disconnect", networkName)
 		_, err := client.sendRequest("POST", uri, nil, nil)
 		return err
 	}
