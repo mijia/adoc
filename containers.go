@@ -266,7 +266,7 @@ func (client *DockerClient) CreateContainer(containerConf ContainerConfig, hostC
 }
 
 func (client *DockerClient) ConnectContainer(networkName string, id string, ipAddr string) error {
-	nc := NetworkOptions
+	var nc NetworkOptions
 	nc.Container = id
 	nc.EndpointConfig.IPAMConfig.IPv4Address = ipAddr
 	if body, err := json.Marshal(nc); err != nil {
@@ -279,7 +279,7 @@ func (client *DockerClient) ConnectContainer(networkName string, id string, ipAd
 }
 
 func (client *DockerClient) DisconncetContainer(networkName string, id string, force bool) error {
-	nc := NetworkOptions
+	var nc NetworkOptions
 	nc.Container = id
 	nc.Force = force
 	if body, err := json.Marshal(nc); err != nil {
