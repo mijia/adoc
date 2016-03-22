@@ -120,6 +120,11 @@ type PortBinding struct {
 	HostPort string
 }
 
+type NetWorks struct {
+	Gateway   string
+	IPAddress string
+}
+
 type NetworkSettings struct {
 	Bridge                 string
 	Gateway                string
@@ -132,6 +137,7 @@ type NetworkSettings struct {
 	LinkLocalIPv6PrefixLen int
 	MacAddress             string
 	Ports                  map[string][]PortBinding
+	NetWorks               NetWorks
 }
 
 // ContainerState defines container running state from inspection
@@ -282,7 +288,7 @@ func (client *DockerClient) DisconncetContainer(networkName string, id string, f
 	var nc NetworkOptions
 	nc.Container = id
 	nc.Force = force
-	if body, err := json.Marshal(nc); err != nil {
+	if _, err := json.Marshal(nc); err != nil {
 		return err
 	} else {
 		uri := fmt.Sprintf("networks/%s/disconnect", networkName)
