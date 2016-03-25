@@ -120,6 +120,11 @@ type PortBinding struct {
 	HostPort string
 }
 
+type NetWorks struct {
+	Gateway   string
+	IPAddress string
+}
+
 type NetworkSettings struct {
 	Bridge                 string
 	Gateway                string
@@ -132,6 +137,7 @@ type NetworkSettings struct {
 	LinkLocalIPv6PrefixLen int
 	MacAddress             string
 	Ports                  map[string][]PortBinding
+	NetWorks               NetWorks
 }
 
 // ContainerState defines container running state from inspection
@@ -185,6 +191,21 @@ type ContainerDetail struct {
 	Volumes         map[string]string
 	VolumesRW       map[string]bool
 	Node            SwarmNode // swarm api
+}
+
+type NetworkOptions struct {
+	Container      string
+	EndpointConfig EndpointConfig
+	Force          bool
+}
+
+type EndpointConfig struct {
+	IPAMConfig IPAMConfig
+}
+
+type IPAMConfig struct {
+	IPv4Address string
+	IPv6Address string
 }
 
 // ListContainers returns containers data, showAll flag defines if you want to show all the containers including the stopped ones
@@ -247,6 +268,32 @@ func (client *DockerClient) CreateContainer(containerConf ContainerConfig, hostC
 			}
 			return resp.Id, err
 		}
+	}
+}
+
+func (client *DockerClient) ConnectContainer(networkName string, id string, ipAddr string) error {
+	var nc NetworkOptions
+	nc.Container = id
+	nc.EndpointConfig.IPAMConfig.IPv4Address = ipAddr
+	if body, err := json.Marshal(nc); err != nil {
+		return err
+	} else {
+		uri := fmt.Sprintf("networks/%s/connect", networkName)
+		_, err := client.sendRequest("POST", uri, body, nil)
+		return err
+	}
+}
+
+func (client *DockerClient) DisconncetContainer(networkName string, id string, force bool) error {
+	var nc NetworkOptions
+	nc.Container = id
+	nc.Force = force
+	if _, err := json.Marshal(nc); err != nil {
+		return err
+	} else {
+		uri := fmt.Sprintf("networks/%s/disconnect", networkName)
+		_, err := client.sendRequest("POST", uri, nil, nil)
+		return err
 	}
 }
 
