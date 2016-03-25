@@ -120,7 +120,7 @@ type PortBinding struct {
 	HostPort string
 }
 
-type NetWorks struct {
+type Networks struct {
 	Gateway   string
 	IPAddress string
 }
@@ -137,7 +137,7 @@ type NetworkSettings struct {
 	LinkLocalIPv6PrefixLen int
 	MacAddress             string
 	Ports                  map[string][]PortBinding
-	NetWorks               NetWorks
+	Networks               map[string]Networks
 }
 
 // ContainerState defines container running state from inspection
