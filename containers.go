@@ -290,15 +290,15 @@ func (client *DockerClient) ConnectContainer(networkName string, id string, ipAd
 	}
 }
 
-func (client *DockerClient) DisconncetContainer(networkName string, id string, force bool) error {
+func (client *DockerClient) DisconnectContainer(networkName string, id string, force bool) error {
 	var nc NetworkOptions
 	nc.Container = id
 	nc.Force = force
-	if _, err := json.Marshal(nc); err != nil {
+	if body, err := json.Marshal(nc); err != nil {
 		return err
 	} else {
 		uri := fmt.Sprintf("networks/%s/disconnect", networkName)
-		_, err := client.sendRequest("POST", uri, nil, nil)
+		_, err := client.sendRequest("POST", uri, body, nil)
 		return err
 	}
 }
