@@ -199,13 +199,17 @@ type NetworkOptions struct {
 	Force          bool
 }
 
+type IPAMConfig struct {
+	IPv4Address string
+	IPv6Address string
+}
+
 type EndpointConfig struct {
 	IPAMConfig IPAMConfig
 }
 
-type IPAMConfig struct {
-	IPv4Address string
-	IPv6Address string
+type NetworkingConfig struct {
+	EndpointsConfig map[string]EndpointConfig
 }
 
 // ListContainers returns containers data, showAll flag defines if you want to show all the containers including the stopped ones
@@ -238,13 +242,15 @@ func (client *DockerClient) InspectContainer(id string) (ContainerDetail, error)
 	}
 }
 
-func (client *DockerClient) CreateContainer(containerConf ContainerConfig, hostConf HostConfig, name ...string) (string, error) {
+func (client *DockerClient) CreateContainer(containerConf ContainerConfig, hostConf HostConfig, networkingConf NetworkingConfig, name ...string) (string, error) {
 	var config struct {
 		ContainerConfig
-		HostConfig HostConfig
+		HostConfig       HostConfig
+		NetworkingConfig NetworkingConfig
 	}
 	config.ContainerConfig = containerConf
 	config.HostConfig = hostConf
+	config.NetworkingConfig = networkingConf
 
 	if body, err := json.Marshal(config); err != nil {
 		return "", err
@@ -284,15 +290,15 @@ func (client *DockerClient) ConnectContainer(networkName string, id string, ipAd
 	}
 }
 
-func (client *DockerClient) DisconncetContainer(networkName string, id string, force bool) error {
+func (client *DockerClient) DisconnectContainer(networkName string, id string, force bool) error {
 	var nc NetworkOptions
 	nc.Container = id
 	nc.Force = force
-	if _, err := json.Marshal(nc); err != nil {
+	if body, err := json.Marshal(nc); err != nil {
 		return err
 	} else {
 		uri := fmt.Sprintf("networks/%s/disconnect", networkName)
-		_, err := client.sendRequest("POST", uri, nil, nil)
+		_, err := client.sendRequest("POST", uri, body, nil)
 		return err
 	}
 }
