@@ -155,7 +155,12 @@ func (client *DockerClient) sendRequestCallback(method string, path string, body
 		return err
 	}
 	if resp.StatusCode >= 400 {
-		return Error{resp.StatusCode, resp.Status}
+		var errMsg []byte
+		var cbErr error
+		if errMsg, cbErr = ioutil.ReadAll(resp.Body); cbErr != nil {
+			return Error{resp.StatusCode, resp.Status}
+		}
+		return Error{resp.StatusCode, strings.TrimSpace(string(errMsg))}
 	}
 
 	defer resp.Body.Close()
