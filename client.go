@@ -30,10 +30,11 @@ func (auth AuthConfig) Encode() string {
 type Error struct {
 	StatusCode int
 	Status     string
+	Message    string
 }
 
 func (e Error) Error() string {
-	return fmt.Sprintf("%d: %s", e.StatusCode, e.Status)
+	return fmt.Sprintf("%d: %s, %s", e.StatusCode, e.Status, e.Message)
 }
 
 func IsNotFound(err error) bool {
@@ -158,9 +159,9 @@ func (client *DockerClient) sendRequestCallback(method string, path string, body
 		var errMsg []byte
 		var cbErr error
 		if errMsg, cbErr = ioutil.ReadAll(resp.Body); cbErr != nil {
-			return Error{resp.StatusCode, resp.Status}
+			return Error{resp.StatusCode, resp.Status, cbErr.Error()}
 		}
-		return Error{resp.StatusCode, strings.TrimSpace(string(errMsg))}
+		return Error{resp.StatusCode, resp.Status, strings.TrimSpace(string(errMsg))}
 	}
 
 	defer resp.Body.Close()
