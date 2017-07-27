@@ -58,8 +58,6 @@ type ContainerConfig struct {
 	AttachStdin     bool
 	AttachStdout    bool
 	Cmd             []string
-	CpuShares       int
-	Cpuset          string
 	Domainname      string
 	Entrypoint      []string
 	Env             []string
@@ -69,8 +67,6 @@ type ContainerConfig struct {
 	Image           string
 	Labels          map[string]string
 	MacAddress      string
-	Memory          int64
-	MemorySwap      int64
 	NetworkDisabled bool
 	OnBuild         []string
 	OpenStdin       bool
@@ -113,6 +109,8 @@ type HostConfig struct {
 	ContainerIDFile string
 	CpuShares       int
 	CpusetCpus      string
+	CPUPeriod       int64 `json:"CpuPeriod"` // CPU CFS (Completely Fair Scheduler) period
+	CPUQuota        int64 `json:"CpuQuota"`  // CPU CFS (Completely Fair Scheduler) quota
 	Devices         []Device
 	Dns             []string
 	DnsSearch       []string
