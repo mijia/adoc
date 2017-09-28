@@ -104,7 +104,6 @@ func (client *DockerClient) SwarmInfo() (SwarmInfo, error) {
 	}
 	ret.Containers = info.Containers
 	offset := 0
-	log.Infof("info:%v", info)
 	for ; offset < len(info.DriverStatus); offset += 1 {
 		key, value := info.DriverStatus[offset][0], info.DriverStatus[offset][1]
 		if strings.HasSuffix(key, "Role") {

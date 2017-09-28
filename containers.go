@@ -102,39 +102,35 @@ type LogConfig struct {
 
 // HostConfig defines basic host configuration for container to run
 type HostConfig struct {
-	Binds                []string
-	BlkioDeviceReadBps   []*blkiodev.ThrottleDevice
-	BlkioDeviceWriteBps  []*blkiodev.ThrottleDevice
-	BlkioDeviceReadIOps  []*blkiodev.ThrottleDevice
-	BlkioDeviceWriteIOps []*blkiodev.ThrottleDevice
-	CapAdd               []string
-	CapDrop              []string
-	CgroupParent         string
-	ContainerIDFile      string
-	CPUPeriod            int64 `json:"CpuPeriod"` // CPU CFS (Completely Fair Scheduler) period
-	CPUQuota             int64 `json:"CpuQuota"`  // CPU CFS (Completely Fair Scheduler) quota
-	CpuShares            int
-	CpusetCpus           string
-	Devices              []Device
-	Dns                  []string
-	DnsSearch            []string
-	ExtraHosts           []string
-	IpcMode              string
-	Links                []string
-	LxcConf              []map[string]string
-	Memory               int64
-	MemorySwap           int64
-	NetworkMode          string
-	PidMode              string
-	PortBindings         map[string][]PortBinding
-	Privileged           bool
-	PublishAllPorts      bool
-	ReadonlyRootfs       bool
-	RestartPolicy        RestartPolicy
-	SecurityOpt          []string
-	VolumesFrom          []string
-	Ulimits              []Ulimit  // 1.18
-	LogConfig            LogConfig // 1.18
+	Binds           []string
+	CapAdd          []string
+	CapDrop         []string
+	CgroupParent    string
+	ContainerIDFile string
+	CPUPeriod       int64 `json:"CpuPeriod"` // CPU CFS (Completely Fair Scheduler) period
+	CPUQuota        int64 `json:"CpuQuota"`  // CPU CFS (Completely Fair Scheduler) quota
+	CpuShares       int
+	CpusetCpus      string
+	Devices         []Device
+	Dns             []string
+	DnsSearch       []string
+	ExtraHosts      []string
+	IpcMode         string
+	Links           []string
+	LxcConf         []map[string]string
+	Memory          int64
+	MemorySwap      int64
+	NetworkMode     string
+	PidMode         string
+	PortBindings    map[string][]PortBinding
+	Privileged      bool
+	PublishAllPorts bool
+	ReadonlyRootfs  bool
+	RestartPolicy   RestartPolicy
+	SecurityOpt     []string
+	VolumesFrom     []string
+	Ulimits         []Ulimit  // 1.18
+	LogConfig       LogConfig // 1.18
 }
 
 type PortBinding struct {
