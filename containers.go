@@ -107,10 +107,10 @@ type HostConfig struct {
 	CapDrop         []string
 	CgroupParent    string
 	ContainerIDFile string
-	CpuShares       int
-	CpusetCpus      string
 	CPUPeriod       int64 `json:"CpuPeriod"` // CPU CFS (Completely Fair Scheduler) period
 	CPUQuota        int64 `json:"CpuQuota"`  // CPU CFS (Completely Fair Scheduler) quota
+	CpuShares       int
+	CpusetCpus      string
 	Devices         []Device
 	Dns             []string
 	DnsSearch       []string

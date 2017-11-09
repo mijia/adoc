@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mijia/sweb/log"
 )
 
 // This part contains the misc apis listed in
@@ -122,10 +124,10 @@ func (client *DockerClient) SwarmInfo() (SwarmInfo, error) {
 	ret.Nodes = make([]SwarmNodeInfo, nodeCount)
 	offset += 1
 	for i := 0; i < nodeCount; i += 1 {
-		if nodeInfo, err := parseSwarmNodeInfo(info.DriverStatus[offset : offset+5]); err == nil {
+		if nodeInfo, err := parseSwarmNodeInfo(info.DriverStatus[offset : offset+9]); err == nil {
 			ret.Nodes[i] = nodeInfo
 		}
-		offset += 5
+		offset += 9
 	}
 	return ret, nil
 }
@@ -139,13 +141,14 @@ func parseSwarmNodeInfo(data [][2]string) (ret SwarmNodeInfo, parseErr error) {
 	}()
 	ret.Name = data[0][0]
 	ret.Address = data[0][1]
-	ret.Containers, _ = strconv.ParseInt(data[1][1], 10, 64)
 
-	cpuInfo := strings.Split(data[2][1], "/")
+	ret.Containers, _ = strconv.ParseInt(data[3][1][:strings.Index(data[3][1], "(")-1], 10, 64)
+
+	cpuInfo := strings.Split(data[4][1], "/")
 	ret.UsedCPUs, _ = strconv.Atoi(strings.TrimSpace(cpuInfo[0]))
 	ret.CPUs, _ = strconv.Atoi(strings.TrimSpace(cpuInfo[1]))
 
-	memInfo := strings.Split(data[3][1], "/")
+	memInfo := strings.Split(data[5][1], "/")
 	ret.UsedMemory, _ = ParseBytesSize(memInfo[0])
 	ret.Memory, _ = ParseBytesSize(memInfo[1])
 	return
