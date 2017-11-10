@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/mijia/sweb/log"
 )
 
 // This part contains the misc apis listed in
