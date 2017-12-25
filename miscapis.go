@@ -44,6 +44,7 @@ type DockerInfo struct {
 	DockerRootDir   string
 	Driver          string
 	DriverStatus    [][2]string
+	SystemStatus    [][2]string
 	ExecutionDriver string
 	ID              string
 	//IPv4Forwarding     int
@@ -93,6 +94,7 @@ func (client *DockerClient) IsSwarm() bool {
 
 func (client *DockerClient) SwarmInfo() (SwarmInfo, error) {
 	var ret SwarmInfo
+	var status [][2]string
 	if !client.isSwarm {
 		return ret, fmt.Errorf("The client is not a swarm client, please use Info()")
 	}
@@ -102,8 +104,13 @@ func (client *DockerClient) SwarmInfo() (SwarmInfo, error) {
 	}
 	ret.Containers = info.Containers
 	offset := 0
-	for ; offset < len(info.DriverStatus); offset += 1 {
-		key, value := info.DriverStatus[offset][0], info.DriverStatus[offset][1]
+	if info.DriverStatus != nil {
+		status = info.DriverStatus
+	} else {
+		status = info.SystemStatus
+	}
+	for ; offset < len(status); offset += 1 {
+		key, value := status[offset][0], status[offset][1]
 		if strings.HasSuffix(key, "Role") {
 			ret.Role = value
 		}
@@ -118,11 +125,11 @@ func (client *DockerClient) SwarmInfo() (SwarmInfo, error) {
 		}
 	}
 
-	nodeCount, _ := strconv.Atoi(info.DriverStatus[offset][1])
+	nodeCount, _ := strconv.Atoi(status[offset][1])
 	ret.Nodes = make([]SwarmNodeInfo, nodeCount)
 	offset += 1
 	for i := 0; i < nodeCount; i += 1 {
-		if nodeInfo, err := parseSwarmNodeInfo(info.DriverStatus[offset : offset+9]); err == nil {
+		if nodeInfo, err := parseSwarmNodeInfo(status[offset : offset+9]); err == nil {
 			ret.Nodes[i] = nodeInfo
 		}
 		offset += 9
