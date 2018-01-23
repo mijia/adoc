@@ -274,7 +274,7 @@ func (client *DockerClient) ListContainers(showAll, showSize bool, filters ...st
 		v.Set("filters", filters[0])
 	}
 	uri := fmt.Sprintf("containers/json?%s", v.Encode())
-	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
+	if data, err := client.sendRequest("GET", uri, nil, nil, nil); err != nil {
 		return nil, err
 	} else {
 		var ret []Container
@@ -287,7 +287,7 @@ func (client *DockerClient) ListContainers(showAll, showSize bool, filters ...st
 func (client *DockerClient) InspectContainer(id string) (ContainerDetail, error) {
 	uri := fmt.Sprintf("containers/%s/json", id)
 	var ret ContainerDetail
-	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
+	if data, err := client.sendRequest("GET", uri, nil, nil, nil); err != nil {
 		return ret, err
 	} else {
 		err := json.Unmarshal(data, &ret)
@@ -305,6 +305,9 @@ func (client *DockerClient) CreateContainer(containerConf ContainerConfig, hostC
 	config.HostConfig = hostConf
 	config.NetworkingConfig = networkingConf
 
+	// extra time for pull image
+	rc := &RequestConfig{ExtraTimeout: ImagePuSecs}
+
 	if body, err := json.Marshal(config); err != nil {
 		return "", err
 	} else {
@@ -314,7 +317,7 @@ func (client *DockerClient) CreateContainer(containerConf ContainerConfig, hostC
 			v.Set("name", name[0])
 			uri += "?" + v.Encode()
 		}
-		if data, err := client.sendRequest("POST", uri, body, nil, true); err != nil {
+		if data, err := client.sendRequest("POST", uri, body, nil, rc); err != nil {
 			return "", err
 		} else {
 			var resp struct {
@@ -338,7 +341,7 @@ func (client *DockerClient) ConnectContainer(networkName string, id string, ipAd
 		return err
 	} else {
 		uri := fmt.Sprintf("networks/%s/connect", networkName)
-		_, err := client.sendRequest("POST", uri, body, nil)
+		_, err := client.sendRequest("POST", uri, body, nil, nil)
 		return err
 	}
 }
@@ -351,36 +354,44 @@ func (client *DockerClient) DisconnectContainer(networkName string, id string, f
 		return err
 	} else {
 		uri := fmt.Sprintf("networks/%s/disconnect", networkName)
-		_, err := client.sendRequest("POST", uri, body, nil)
+		_, err := client.sendRequest("POST", uri, body, nil, nil)
 		return err
 	}
 }
 
 func (client *DockerClient) StartContainer(id string) error {
 	uri := fmt.Sprintf("containers/%s/start", id)
-	_, err := client.sendRequest("POST", uri, nil, nil)
+	_, err := client.sendRequest("POST", uri, nil, nil, nil)
 	return err
 }
 
 func (client *DockerClient) StopContainer(id string, timeout ...int) error {
 	uri := fmt.Sprintf("containers/%s/stop", id)
+	var rc *RequestConfig
 	if len(timeout) > 0 && timeout[0] >= 0 {
 		v := url.Values{}
 		v.Set("t", fmt.Sprintf("%d", timeout[0]))
 		uri += "?" + v.Encode()
+		rc = &RequestConfig{ExtraTimeout: time.Duration(timeout[0]) * time.Second}
+	} else {
+		rc = &RequestConfig{ExtraTimeout: 10 * time.Second}
 	}
-	_, err := client.sendRequest("POST", uri, nil, nil)
+	_, err := client.sendRequest("POST", uri, nil, nil, rc)
 	return err
 }
 
 func (client *DockerClient) RestartContainer(id string, timeout ...int) error {
 	uri := fmt.Sprintf("containers/%s/restart", id)
+	var rc *RequestConfig
 	if len(timeout) > 0 && timeout[0] >= 0 {
 		v := url.Values{}
 		v.Set("t", fmt.Sprintf("%d", timeout[0]))
 		uri += "?" + v.Encode()
+		rc = &RequestConfig{ExtraTimeout: time.Duration(timeout[0]) * time.Second}
+	} else {
+		rc = &RequestConfig{ExtraTimeout: 10 * time.Second}
 	}
-	_, err := client.sendRequest("POST", uri, nil, nil)
+	_, err := client.sendRequest("POST", uri, nil, nil, rc)
 	return err
 }
 
@@ -391,19 +402,19 @@ func (client *DockerClient) KillContainer(id string, signal ...string) error {
 		v.Set("signal", signal[0])
 		uri += "?" + v.Encode()
 	}
-	_, err := client.sendRequest("POST", uri, nil, nil)
+	_, err := client.sendRequest("POST", uri, nil, nil, nil)
 	return err
 }
 
 func (client *DockerClient) PauseContainer(id string) error {
 	uri := fmt.Sprintf("containers/%s/pause", id)
-	_, err := client.sendRequest("POST", uri, nil, nil)
+	_, err := client.sendRequest("POST", uri, nil, nil, nil)
 	return err
 }
 
 func (client *DockerClient) UnpauseContainer(id string) error {
 	uri := fmt.Sprintf("containers/%s/unpause", id)
-	_, err := client.sendRequest("POST", uri, nil, nil)
+	_, err := client.sendRequest("POST", uri, nil, nil, nil)
 	return err
 }
 
@@ -412,7 +423,7 @@ func (client *DockerClient) RemoveContainer(id string, force, volumes bool) erro
 	v.Set("force", formatBoolToIntString(force))
 	v.Set("v", formatBoolToIntString(volumes))
 	uri := fmt.Sprintf("containers/%s?%s", id, v.Encode())
-	_, err := client.sendRequest("DELETE", uri, nil, nil)
+	_, err := client.sendRequest("DELETE", uri, nil, nil, nil)
 	return err
 }
 
@@ -420,14 +431,14 @@ func (client *DockerClient) RenameContainer(id string, name string) error {
 	v := url.Values{}
 	v.Set("name", name)
 	uri := fmt.Sprintf("containers/%s/rename?%s", id, v.Encode())
-	_, err := client.sendRequest("POST", uri, nil, nil)
+	_, err := client.sendRequest("POST", uri, nil, nil, nil)
 	return err
 }
 
 // This will block the call routine until the container is stopped
 func (client *DockerClient) WaitContainer(id string) (int, error) {
 	uri := fmt.Sprintf("containers/%s/wait", id)
-	if data, err := client.sendRequest("POST", uri, nil, nil, true); err != nil {
+	if data, err := client.sendRequest("POST", uri, nil, nil, nil, true); err != nil {
 		return 0, err
 	} else {
 		var ret map[string]int
@@ -459,7 +470,7 @@ func (client *DockerClient) ContainerLogs(id string, stdout, stderr, timestamps 
 		var cbErr error
 		entries, cbErr = ReadAllDockerLogs(resp.Body)
 		return cbErr
-	})
+	}, nil)
 	return entries, err
 }
 
@@ -478,7 +489,7 @@ func (client *DockerClient) ContainerProcesses(id string, psArgs ...string) (Pro
 	if len(v) > 0 {
 		uri += "?" + v.Encode()
 	}
-	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
+	if data, err := client.sendRequest("GET", uri, nil, nil, nil); err != nil {
 		return procs, err
 	} else {
 		err := json.Unmarshal(data, &procs)
@@ -493,7 +504,7 @@ type FsChange struct {
 
 func (client *DockerClient) ContainerChanges(id string) ([]FsChange, error) {
 	uri := fmt.Sprintf("containers/%s/changes", id)
-	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
+	if data, err := client.sendRequest("GET", uri, nil, nil, nil); err != nil {
 		return nil, err
 	} else {
 		var changes []FsChange

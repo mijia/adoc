@@ -80,7 +80,7 @@ type ExecConfig struct {
 
 func (client *DockerClient) Version() (Version, error) {
 	var ret Version
-	if data, err := client.sendRequest("GET", "version", nil, nil); err != nil {
+	if data, err := client.sendRequest("GET", "version", nil, nil, nil); err != nil {
 		return Version{}, err
 	} else {
 		err := json.Unmarshal(data, &ret)
@@ -161,7 +161,7 @@ func parseSwarmNodeInfo(data [][2]string) (ret SwarmNodeInfo, parseErr error) {
 
 func (client *DockerClient) Info() (DockerInfo, error) {
 	var ret DockerInfo
-	if data, err := client.sendRequest("GET", "info", nil, nil); err != nil {
+	if data, err := client.sendRequest("GET", "info", nil, nil, nil); err != nil {
 		return ret, err
 	} else {
 		err := json.Unmarshal(data, &ret)
@@ -170,7 +170,7 @@ func (client *DockerClient) Info() (DockerInfo, error) {
 }
 
 func (client *DockerClient) Ping() (bool, error) {
-	if data, err := client.sendRequest("GET", "_ping", nil, nil); err != nil {
+	if data, err := client.sendRequest("GET", "_ping", nil, nil, nil); err != nil {
 		return false, err
 	} else {
 		return string(data) == "OK", nil
@@ -182,7 +182,7 @@ func (client *DockerClient) CreateExec(id string, execConfig ExecConfig) (string
 		return "", err
 	} else {
 		uri := fmt.Sprintf("containers/%s/exec", id)
-		if data, err := client.sendRequest("POST", uri, body, nil); err != nil {
+		if data, err := client.sendRequest("POST", uri, body, nil, nil); err != nil {
 			return "", err
 		} else {
 			var ret map[string]interface{}
@@ -206,7 +206,7 @@ func (client *DockerClient) StartExec(execId string, detach, tty bool) ([]byte, 
 		return nil, err
 	} else {
 		uri := fmt.Sprintf("exec/%s/start", execId)
-		return client.sendRequest("POST", uri, body, nil)
+		return client.sendRequest("POST", uri, body, nil, nil)
 	}
 }
 

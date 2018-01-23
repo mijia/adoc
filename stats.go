@@ -79,6 +79,6 @@ func (client *DockerClient) ContainerStats(id string) (Stats, error) {
 		decoder := json.NewDecoder(resp.Body)
 		cbErr := decoder.Decode(&stats)
 		return cbErr
-	})
+	}, nil)
 	return stats, err
 }

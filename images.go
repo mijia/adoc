@@ -39,6 +39,10 @@ type ImageDetail struct {
 	//Config          ContainerConfig // don't know what this is for
 }
 
+const (
+	ImagePuSecs = 100 * time.Second // 1000M / (10M/s)
+)
+
 func (client *DockerClient) ListImages(showAll bool, filters ...string) ([]Image, error) {
 	v := url.Values{}
 	v.Set("all", formatBoolToIntString(showAll))
@@ -46,7 +50,7 @@ func (client *DockerClient) ListImages(showAll bool, filters ...string) ([]Image
 		v.Set("filters", filters[0])
 	}
 	uri := fmt.Sprintf("images/json?%s", v.Encode())
-	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
+	if data, err := client.sendRequest("GET", uri, nil, nil, nil); err != nil {
 		return nil, err
 	} else {
 		var images []Image
@@ -58,7 +62,7 @@ func (client *DockerClient) ListImages(showAll bool, filters ...string) ([]Image
 func (client *DockerClient) InspectImage(name string) (ImageDetail, error) {
 	var ret ImageDetail
 	uri := fmt.Sprintf("images/%s/json", name)
-	if data, err := client.sendRequest("GET", uri, nil, nil); err != nil {
+	if data, err := client.sendRequest("GET", uri, nil, nil, nil); err != nil {
 		return ret, err
 	} else {
 		err := json.Unmarshal(data, &ret)
@@ -75,6 +79,9 @@ func (client *DockerClient) PullImage(name string, tag string, authConfig ...Aut
 	if len(authConfig) > 0 {
 		header["X-Registry-Auth"] = authConfig[0].Encode()
 	}
+	// extra time for pull image
+	rc := &RequestConfig{ExtraTimeout: ImagePuSecs}
+
 	err := client.sendRequestCallback("POST", uri, nil, header, func(resp *http.Response) error {
 		var status map[string]interface{}
 		var cbErr error
@@ -88,7 +95,7 @@ func (client *DockerClient) PullImage(name string, tag string, authConfig ...Aut
 			return fmt.Errorf("Pull image error: %s", errMsg)
 		}
 		return nil
-	}, true)
+	}, rc)
 	return err
 }
 
@@ -97,7 +104,7 @@ func (client *DockerClient) RemoveImage(name string, force, noprune bool) error 
 	v.Set("force", formatBoolToIntString(force))
 	v.Set("noprune", formatBoolToIntString(noprune))
 	uri := fmt.Sprintf("images/%s?%s", name, v.Encode())
-	_, err := client.sendRequest("DELETE", uri, nil, nil)
+	_, err := client.sendRequest("DELETE", uri, nil, nil, nil)
 	return err
 }
 
@@ -107,7 +114,7 @@ func (client *DockerClient) TagImage(name string, repo string, tag string, force
 	v.Set("repo", repo)
 	v.Set("tag", tag)
 	uri := fmt.Sprintf("images/%s/tag?%s", name, v.Encode())
-	_, err := client.sendRequest("POST", uri, nil, nil)
+	_, err := client.sendRequest("POST", uri, nil, nil, nil)
 	return err
 }
 
@@ -119,6 +126,10 @@ func (client *DockerClient) PushImage(name string, repo string, tag string, auth
 	if len(authConfig) > 0 {
 		header["X-Registry-Auth"] = authConfig[0].Encode()
 	}
+
+	// extra time for push image
+	rc := &RequestConfig{ExtraTimeout: ImagePuSecs}
+
 	err := client.sendRequestCallback("POST", uri, nil, header, func(resp *http.Response) error {
 		var status map[string]interface{}
 		var cbErr error
@@ -132,7 +143,7 @@ func (client *DockerClient) PushImage(name string, repo string, tag string, auth
 			return fmt.Errorf("Push image error: %s", errMsg)
 		}
 		return nil
-	}, true)
+	}, rc)
 	return err
 }
 
