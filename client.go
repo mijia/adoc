@@ -21,6 +21,10 @@ type AuthConfig struct {
 	Email    string `json:"email,omitempty"`
 }
 
+type RequestConfig struct {
+	ExtraTimeout time.Duration
+}
+
 func (auth AuthConfig) Encode() string {
 	var buffer bytes.Buffer
 	json.NewEncoder(&buffer).Encode(auth)
@@ -130,7 +134,7 @@ func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout tim
 
 type responseCallback func(resp *http.Response) error
 
-func (client *DockerClient) sendRequestCallback(method string, path string, body []byte, headers map[string]string, callback responseCallback, isLongpoll ...bool) error {
+func (client *DockerClient) sendRequestCallback(method string, path string, body []byte, headers map[string]string, callback responseCallback, rc *RequestConfig, isLongpoll ...bool) error {
 	b := bytes.NewBuffer(body)
 	urlPath := fmt.Sprintf("%s/%s/%s", client.daemonUrl.String(), client.apiVersion, path)
 	logger.Debugf("SendRequest %q, [%s]", method, urlPath)
@@ -147,6 +151,12 @@ func (client *DockerClient) sendRequestCallback(method string, path string, body
 	httpClient := client.httpClient
 	if len(isLongpoll) > 0 && isLongpoll[0] {
 		httpClient = client.longpollClient
+	}
+	if rc != nil && rc.ExtraTimeout > 0 {
+		httpClient = &http.Client{
+			Transport: httpClient.Transport,
+			Timeout:   httpClient.Timeout + rc.ExtraTimeout,
+		}
 	}
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -168,7 +178,7 @@ func (client *DockerClient) sendRequestCallback(method string, path string, body
 	return callback(resp)
 }
 
-func (client *DockerClient) sendRequest(method string, path string, body []byte, headers map[string]string, isLongpoll ...bool) ([]byte, error) {
+func (client *DockerClient) sendRequest(method string, path string, body []byte, headers map[string]string, rc *RequestConfig, isLongpoll ...bool) ([]byte, error) {
 	var data []byte
 	err := client.sendRequestCallback(method, path, body, headers, func(resp *http.Response) error {
 		var cbErr error
@@ -176,7 +186,7 @@ func (client *DockerClient) sendRequest(method string, path string, body []byte,
 			return cbErr
 		}
 		return nil
-	}, isLongpoll...)
+	}, rc, isLongpoll...)
 	return data, err
 }
 

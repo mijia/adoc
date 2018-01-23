@@ -108,7 +108,7 @@ func (client *DockerClient) EventsSince(filters string, since time.Duration, unt
 			return cbErr
 		}
 		return nil
-	})
+	}, nil)
 	return events, err
 }
 
