@@ -218,6 +218,15 @@ type SwarmNode struct {
 	Labels map[string]string
 }
 
+type GraphDriverData struct {
+	// data
+	// Required: true
+	Data map[string]string `json:"Data"`
+	// name
+	// Required: true
+	Name string `json:"Name"`
+}
+
 // ContainerDetail defines the detail data of the container from inspection, including the swarm node infor
 type ContainerDetail struct {
 	AppArmorProfile string
@@ -227,6 +236,7 @@ type ContainerDetail struct {
 	Driver          string
 	ExecDriver      string
 	ExecIDs         []string
+	GraphDriver     GraphDriverData
 	HostConfig      HostConfig
 	HostnamePath    string
 	HostsPath       string
@@ -377,6 +387,16 @@ func (client *DockerClient) StopContainer(id string, timeout ...int) error {
 		rc = &RequestConfig{ExtraTimeout: 10 * time.Second}
 	}
 	_, err := client.sendRequest("POST", uri, nil, nil, rc)
+	return err
+}
+
+func (client *DockerClient) UpdateContainer(id string, config interface{}) error {
+	uri := fmt.Sprintf("containers/%s/update", id)
+	body, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	_, err = client.sendRequest("POST", uri, body, nil, nil)
 	return err
 }
 
