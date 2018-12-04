@@ -110,8 +110,9 @@ func NewDockerClientTimeout(daemonUrl string, tlsConfig *tls.Config, timeout tim
 			u.Scheme = "https"
 		}
 	}
+	copiedUrl, _ := url.Parse(u.String())
 	httpClient := newHttpClient(u, tlsConfig, timeout, rwTimeout)
-	longpollClient := newHttpClient(u, tlsConfig, timeout, 0)
+	longpollClient := newHttpClient(copiedUrl, tlsConfig, timeout, 0)
 	clientApiVersion := kDefaultApiVersion
 	if len(apiVersion) > 0 && apiVersion[0] != "" {
 		clientApiVersion = apiVersion[0]
